@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Inventory | Stockroom</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+  <script src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand"><div class="brand-icon">I</div><div><strong>Stockroom</strong><small>INVENTORY SYSTEM</small></div></div>
+      <div class="side-label">WORKSPACE</div>
+      <button class="nav-item active" data-section="overview"><span>▦</span> Overview</button>
+      <button class="nav-item" data-section="inventory"><span>▤</span> Inventory items</button>
+      <button class="nav-item" data-section="relationships"><span>⌘</span> Relationship graph</button>
+      <div class="sidebar-bottom"><div class="db-card"><span class="pulse"></span><div><b>Database status</b><small id="db-status">Checking connections…</small></div></div><p>MongoDB · Neo4j</p></div>
+    </aside>
+    <main class="main-content">
+      <header class="topbar"><div><div class="eyebrow">INVENTORY MANAGEMENT</div><h1 id="page-title">Overview</h1></div><div class="top-actions"><span class="today-chip">● Live workspace</span><button class="button button-dark" id="top-add">＋ Add item</button></div></header>
+      <section id="overview-section" class="section-page">
+        <div class="welcome-row"><div><h2>Your stock, at a glance.</h2><p>Track products across categories and suppliers in one place.</p></div><button class="button button-light" id="seed-button">↻ Load sample data</button></div>
+        <div class="stats-grid">
+          <article class="stat-card"><div class="stat-top"><span>Total products</span><span class="stat-icon purple">▤</span></div><strong id="stat-products">—</strong><small>Unique inventory records</small></article>
+          <article class="stat-card"><div class="stat-top"><span>Units in stock</span><span class="stat-icon green">▥</span></div><strong id="stat-units">—</strong><small>Across all products</small></article>
+          <article class="stat-card"><div class="stat-top"><span>Categories</span><span class="stat-icon orange">◈</span></div><strong id="stat-categories">3</strong><small>Electronics, stationery, furniture</small></article>
+          <article class="stat-card"><div class="stat-top"><span>Suppliers</span><span class="stat-icon blue">♧</span></div><strong id="stat-suppliers">6</strong><small>Two supplier branches per category</small></article>
+        </div>
+        <div class="content-grid">
+          <section class="panel recent-panel"><div class="panel-heading"><div><h3>Recent inventory</h3><p>Latest products added to your system</p></div><button class="text-button" id="view-all">View all →</button></div><div class="table-wrap"><table><thead><tr><th>PRODUCT</th><th>CATEGORY</th><th>SUPPLIER</th><th>QUANTITY</th><th></th></tr></thead><tbody id="recent-body"><tr><td colspan="5" class="empty">Loading inventory…</td></tr></tbody></table></div></section>
+          <section class="panel structure-panel"><div class="panel-heading"><div><h3>Your data structure</h3><p>Same hierarchy as your diagram</p></div><span class="tag">5 LEVELS</span></div><div class="mini-tree"><div class="tree-node root-node">Inventory</div><div class="tree-line"></div><div class="tree-node category-node">Category</div><div class="tree-branches"><div><i></i><span>Electronics</span></div><div><i></i><span>Stationery</span></div><div><i></i><span>Furniture</span></div></div><div class="tree-note">Category → Supplier → Product → Quantity</div></div><button class="button button-outline full-width" id="open-graph">Explore relationship graph ↗</button></section>
+        </div>
+      </section>
+      <section id="inventory-section" class="section-page hidden">
+        <div class="inventory-toolbar"><div><h2>All inventory items</h2><p>Manage products, suppliers and stock quantities.</p></div><button class="button button-dark" id="inventory-add">＋ Add item</button></div>
+        <div class="filter-bar"><input id="search-input" type="search" placeholder="Search product or supplier…"><select id="filter-category"><option value="">All categories</option></select><select id="filter-supplier"><option value="">All suppliers</option></select></div>
+        <section class="panel"><div class="table-wrap"><table><thead><tr><th>PRODUCT</th><th>CATEGORY</th><th>SUPPLIER</th><th>QUANTITY</th><th>ADDED</th><th>ACTIONS</th></tr></thead><tbody id="inventory-body"><tr><td colspan="6" class="empty">Loading inventory…</td></tr></tbody></table></div></section>
+      </section>
+      <section id="relationships-section" class="section-page hidden">
+        <div class="inventory-toolbar"><div><h2>Relationship graph</h2><p>Explore the exact Inventory → Category → Supplier → Product → Quantity model.</p></div><button class="button button-light" id="refresh-graph">↻ Refresh graph</button></div>
+        <div class="graph-legend"><span><i class="legend-dot inventory-dot"></i>Inventory</span><span><i class="legend-dot category-dot"></i>Category</span><span><i class="legend-dot supplier-dot"></i>Supplier</span><span><i class="legend-dot product-dot"></i>Product</span><span><i class="legend-dot quantity-dot"></i>Quantity</span></div>
+        <div class="panel graph-panel"><div id="graph-canvas"></div><div id="graph-message" class="graph-message">Loading graph…</div></div>
+        <div class="graph-footer"><span>Drag nodes to arrange · Scroll to zoom · Click a node for details</span><code>MATCH (n)-[r]->(m) RETURN n,r,m</code></div>
+      </section>
+    </main>
+  </div>
+  <div class="modal-backdrop hidden" id="item-modal"><form class="modal" id="item-form"><div class="modal-heading"><div><div class="eyebrow">INVENTORY RECORD</div><h2 id="modal-title">Add inventory item</h2></div><button type="button" class="icon-button" id="close-modal">×</button></div><input type="hidden" id="edit-id"><label>Category<select id="item-category" required><option value="Electronics">Electronics</option><option value="Stationery">Stationery</option><option value="Furniture">Furniture</option></select></label><label>Supplier<select id="item-supplier" required><option>Supplier 1</option><option>Supplier 2</option></select></label><label>Product name<input id="item-product" placeholder="e.g. Wireless Mouse" required maxlength="120"></label><label>Quantity in stock<input id="item-quantity" type="number" min="0" step="1" placeholder="0" required></label><p class="form-hint">Saved to MongoDB and mirrored to Neo4j as a Quantity node.</p><div class="modal-actions"><button type="button" class="button button-light" id="cancel-modal">Cancel</button><button type="submit" class="button button-dark" id="save-button">Save item</button></div><div id="form-error" class="form-error"></div></form></div>
+  <div id="toast" class="toast hidden"></div>
+  <script src="{{ url_for('static', filename='app.js') }}"></script>
+</body></html>
